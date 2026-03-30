@@ -15,8 +15,15 @@ class JournalRepository(private val journalDao: JournalDao, private val context:
         prefs.edit().putString("username", username).apply()
     }
 
-    //all entries
+    fun isAppLockEnabled(): Boolean {
+        return prefs.getBoolean("app_lock_enabled", false)
+    }
 
+    fun setAppLockEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("app_lock_enabled", enabled).apply()
+    }
+
+    //all entries
     fun getEntries(): Flow<List<JournalEntry>> = journalDao.getAllEntries()
 
     suspend fun insert(entry: JournalEntry){

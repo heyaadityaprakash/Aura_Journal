@@ -93,6 +93,8 @@ dependencies {
     // Coil for image loading
     implementation("io.coil-kt:coil-compose:2.6.0")
 
+//    biometrics
+    implementation("androidx.biometric:biometric:1.2.0-alpha05")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

@@ -42,6 +42,10 @@ class JournalViewModel(private val repository: JournalRepository): ViewModel() {
     private var lastAnalyzedEntriesHash: Int = 0
 
 
+//    app lock state
+    private val _isAppLocked= MutableStateFlow(repository.isAppLockEnabled())
+    val isAppLocked: StateFlow<Boolean> = _isAppLocked.asStateFlow()
+
     //fun to update username
     fun updateUsername(newName: String){
         viewModelScope.launch {
@@ -79,6 +83,11 @@ class JournalViewModel(private val repository: JournalRepository): ViewModel() {
         }
     }
 
+    //app lock
+    fun setAppLock(enabled: Boolean) {
+        repository.setAppLockEnabled(enabled)
+        _isAppLocked.value = enabled
+    }
 
 
     //    dynamic AI prompt

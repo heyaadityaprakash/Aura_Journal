@@ -1,5 +1,6 @@
 package com.aadi.aurajournal.feature
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -27,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.aadi.aurajournal.JournalViewModel
 import com.aadi.aurajournal.data.JournalEntry
 import com.aadi.aurajournal.ui.components.AuraCard
+import com.aadi.aurajournal.utils.authenticateWithBiometrics
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -38,16 +40,18 @@ import java.util.Locale
 fun ProfileScreen(
     viewModel: JournalViewModel
 ) {
-
+    val context = androidx.compose.ui.platform.LocalContext.current
     //username
     val username by viewModel.username.collectAsState()
     var showDailog by remember { mutableStateOf(false) }
     var tempname by remember { mutableStateOf(username) }
     // States for the interactive elements
-    var isAppLocked by remember { mutableStateOf(false) }
     var isDarkMode by remember { mutableStateOf(false) }
 
     val entries by viewModel.allEntries.collectAsState()
+
+//    app lock
+    val isAppLocked by viewModel.isAppLocked.collectAsState()
 
     Scaffold { innerPadding ->
         Column(
@@ -144,7 +148,21 @@ fun ProfileScreen(
                         icon = Icons.Default.Lock,
                         title = "App Lock",
                         isChecked = isAppLocked,
-                        onCheckedChange = { isAppLocked = it }
+                        onCheckedChange = { newValue ->
+                            val action = if (newValue) "Enabled" else "Disabled"
+
+                            authenticateWithBiometrics(
+                                context = context,
+                                title = "$action App Lock",
+                                onSuccess = {
+                                    viewModel.setAppLock(newValue)
+                                    Toast.makeText(context, "App Lock $action", Toast.LENGTH_SHORT).show()
+                                },
+                                onError = {
+                                    Toast.makeText(context, "Authentication Failed", Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        }
                     )
 
                     // Dark Mode
@@ -180,7 +198,7 @@ fun ProfileScreen(
 
             // --- 4. Footer Text ---
             Text(
-                text = "aura v-1.0 (beta)",
+                text = "aura v-1.2.2 (beta)",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 modifier = Modifier.fillMaxWidth(),
