@@ -1,6 +1,6 @@
 <div align="center">
   
-  <img src="link_to_your_logo.png" alt="AURA Logo" width="120">
+  <img src="https://github.com/heyaadityaprakash/Aura_Journal/blob/master/assets/idea-2%20(1).png" alt="AURA Logo" width="120">
 
   <h1>AURA Journal</h1>
   <p><strong>A minimalist, AI-driven personal journaling app designed to seamlessly capture and reflect your daily emotional energy.</strong></p>
@@ -26,11 +26,11 @@ Beyond simple note-taking, AURA leverages the power of the **Google Gemini AI SD
 *(Tip: Upload your screenshots to an `assets` folder in your repo and replace the links below)*
 
 <div align="center">
-  <img src="link_to_screenshot_1.png" alt="Timeline Screen" width="250">
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="link_to_screenshot_2.png" alt="Voice Input Screen" width="250">
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="link_to_screenshot_3.png" alt="AI Insights Screen" width="250">
+  <img src="https://github.com/heyaadityaprakash/Aura_Journal/raw/master/assets/iPhone%2017%20-%202.png" alt="Timeline Screen" width="155">
+  <img src="https://github.com/heyaadityaprakash/Aura_Journal/raw/master/assets/iPhone%2017%20-%201.png" alt="Voice Input Screen" width="155">
+  <img src="https://github.com/heyaadityaprakash/Aura_Journal/raw/master/assets/iPhone%2017%20-%203.png" alt="AI Insights Screen" width="155">
+  <img src="https://github.com/heyaadityaprakash/Aura_Journal/raw/master/assets/iPhone%2017%20-%204.png" alt="AI Insights Screen" width="155">
+  <img src="https://github.com/heyaadityaprakash/Aura_Journal/raw/master/assets/iPhone%2017%20-%205.png" alt="AI Insights Screen" width="155">
 </div>
 
 ---
@@ -39,7 +39,7 @@ Beyond simple note-taking, AURA leverages the power of the **Google Gemini AI SD
 
 Want to see it in action without building from source? You can download the latest APK right here.
 
-👉 **[Download AURA App (v1.0) APK](link_to_your_apk_file_here)**
+👉 **[Download AURA App (v1.0) APK](https://drive.google.com/file/d/1pG5u69B3sA8JzlUE2zXqeNLeiQTozcbA/view?usp=sharing)**
 
 ---
 
