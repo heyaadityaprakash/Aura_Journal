@@ -39,7 +39,7 @@ Beyond simple note-taking, AURA leverages the power of the **Google Gemini AI SD
 
 Want to see it in action without building from source? You can download the latest APK right here.
 
-👉 **[Download AURA App (v1.0) APK](https://drive.google.com/file/d/1pG5u69B3sA8JzlUE2zXqeNLeiQTozcbA/view?usp=sharing)**
+👉 **[Download AURA App (v1.2) APK](https://drive.google.com/file/d/1pG5u69B3sA8JzlUE2zXqeNLeiQTozcbA/view?usp=sharing)**
 
 ---
 
