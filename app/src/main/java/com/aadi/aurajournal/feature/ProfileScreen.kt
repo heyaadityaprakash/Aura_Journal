@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.aadi.aurajournal.JournalViewModel
 import com.aadi.aurajournal.data.JournalEntry
 import com.aadi.aurajournal.ui.components.AuraCard
+import com.aadi.aurajournal.ui.components.StatsCard
 import com.aadi.aurajournal.utils.authenticateWithBiometrics
 import java.time.Instant
 import java.time.LocalDate
@@ -136,6 +137,11 @@ fun ProfileScreen(
             StreakCountCard(entries = entries)
 
             Spacer(modifier = Modifier.height(24.dp))
+
+            StatsCard(entries = entries)
+            
+            Spacer(modifier = Modifier.height(24.dp))
+
 
             // --- 3. Settings & Toggles ---
             AuraCard(

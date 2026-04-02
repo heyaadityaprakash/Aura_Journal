@@ -1,7 +1,7 @@
 package com.aadi.aurajournal
 
 import android.os.Bundle
-    import android.widget.Toast
+import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
@@ -17,6 +17,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aadi.aurajournal.ui.AuraBottomBar
 import com.aadi.aurajournal.ui.theme.AuraJournalTheme
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.aadi.aurajournal.data.AuraDatabase
 import com.aadi.aurajournal.data.JournalRepository
 import com.aadi.aurajournal.utils.authenticateWithBiometrics
@@ -52,8 +53,17 @@ class MainActivity : FragmentActivity() {
 
             AuraJournalTheme {
                 if (isUnlocked) {
+                    val navBackStackEntry by navController.currentBackStackEntryAsState()
+                    val currentRoute = navBackStackEntry?.destination?.route
+                    // Hide bottom bar on the editor screen
+                    val showBottomBar = currentRoute != null && !currentRoute.startsWith("editor")
+
                     Scaffold(
-                        bottomBar = { AuraBottomBar(navController = navController) }
+                        bottomBar = {
+                            if (showBottomBar) {
+                                AuraBottomBar(navController = navController)
+                            }
+                        }
                     ) { innerPadding ->
                         AuraNavGraph(
                             navController = navController,

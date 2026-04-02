@@ -62,14 +62,15 @@ class JournalViewModel(private val repository: JournalRepository): ViewModel() {
         )
 
     //fun to save entries
-    fun saveEntry(content: String, entryId: Int = 0, mood: String? = null) {
+    fun saveEntry(content: String, entryId: Int = 0, mood: String? = null,images:List<String> = emptyList()) {
         if (content.isNotBlank()) {
             viewModelScope.launch {
                 val entry = JournalEntry(
                     id = entryId, // If 0, Room creates a new one. If >0, Room updates the existing one!
                     content = content,
                     mood = mood,
-                    timeStamp = System.currentTimeMillis() // Update the timestamp on edit
+                    timeStamp = System.currentTimeMillis(), // Update the timestamp on edit
+                    images = images
                 )
                 repository.insert(entry)
             }

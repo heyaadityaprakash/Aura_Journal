@@ -12,4 +12,5 @@ data class JournalEntry(
     val mood:String?=null,
     val weatherContext:String?=null,
     val locationContext:String?=null,
+    val images: List<String> = emptyList()
 )

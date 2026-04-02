@@ -1,88 +1,95 @@
 package com.aadi.aurajournal.feature
 
+import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Place
-import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
+import coil.compose.AsyncImage
 import com.aadi.aurajournal.JournalViewModel
 import com.aadi.aurajournal.data.JournalEntry
-import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import android.Manifest
-import android.widget.Toast
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.material.icons.filled.SettingsVoice
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import com.aadi.aurajournal.data.MoodType
 import com.aadi.aurajournal.ui.components.MoodPicker
+import com.aadi.aurajournal.utils.copyUriToInternalStorage
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ComposeEntryScreen(
     viewModel: JournalViewModel,
     onNavigateBack: () -> Unit,
-    entryId:Int=-1
+    entryId: Int = -1
 ) {
-//    Find the entry if we are editing
     val allEntries by viewModel.allEntries.collectAsState()
     val entryToEdit = remember(entryId, allEntries) {
         allEntries.find { it.id == entryId }
     }
 
-// If editing, start on the Manual page (Index 1). Otherwise, Audio (Index 0).
-    val initialPage=1
-
+    val initialPage = 1
     val inputTabs = listOf("Audio", "Manual")
-    val pagerState = rememberPagerState(initialPage = initialPage,pageCount = { inputTabs.size })
+    val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { inputTabs.size })
     val coroutineScope = rememberCoroutineScope()
 
-    // State to control the visibility of the Dropdown Menu
     var menuExpanded by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
+    var selectedImgs by remember { mutableStateOf(entryToEdit?.images ?: emptyList()) }
+    var clickedImg by remember { mutableStateOf<String?>(null) }
 
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 4)
+    ) { uris ->
+        if (uris.isNotEmpty()) {
+            val newInternalPaths = uris.mapNotNull { uri ->
+                copyUriToInternalStorage(context, uri)
+            }
+            selectedImgs = selectedImgs + newInternalPaths
+        }
+    }
 
-    //for ai prompt
-    //collecting prompt
     val aiPromptText by viewModel.prompt.collectAsState()
 
-    //trigger only for new entries
     LaunchedEffect(Unit) {
-        if(entryId==-1){
+        if (entryId == -1) {
             viewModel.generateNewPrompt()
         }
     }
@@ -97,13 +104,11 @@ fun ComposeEntryScreen(
                     }
                 },
                 actions = {
-                    // Wrap the icon and menu in a Box so the dropdown anchors correctly to the icon
                     Box {
                         IconButton(onClick = { menuExpanded = true }) {
                             Icon(Icons.Default.MoreVert, contentDescription = "More options")
                         }
 
-                        // The Dropdown Menu for adding context
                         DropdownMenu(
                             shape = RoundedCornerShape(24.dp),
                             expanded = menuExpanded,
@@ -113,49 +118,32 @@ fun ComposeEntryScreen(
                             DropdownMenuItem(
                                 text = { Text("Add Image") },
                                 leadingIcon = { Icon(Icons.Default.Image, contentDescription = null) },
-                                contentPadding = PaddingValues(
-                                    horizontal = 20.dp,
-                                    vertical = 12.dp
-                                ),
                                 onClick = {
                                     menuExpanded = false
-                                    /* TODO: Launch Photo Picker */
+                                    photoPickerLauncher.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                    )
                                 }
                             )
                             DropdownMenuItem(
                                 text = { Text("Add Location") },
                                 leadingIcon = { Icon(Icons.Default.Place, contentDescription = null) },
-                                contentPadding = PaddingValues(
-                                    horizontal = 20.dp,
-                                    vertical = 12.dp
-                                ),
                                 onClick = {
                                     menuExpanded = false
-                                    /* TODO: Fetch GPS Context */
                                 }
                             )
                             DropdownMenuItem(
                                 text = { Text("Add Song") },
                                 leadingIcon = { Icon(Icons.Default.MusicNote, contentDescription = null) },
-                                contentPadding = PaddingValues(
-                                    horizontal = 20.dp,
-                                    vertical = 12.dp
-                                ),
                                 onClick = {
                                     menuExpanded = false
-                                    /* TODO: Fetch Now Playing context */
                                 }
                             )
                             DropdownMenuItem(
                                 text = { Text("Add Video") },
                                 leadingIcon = { Icon(Icons.Default.Videocam, contentDescription = null) },
-                                contentPadding = PaddingValues(
-                                    horizontal = 20.dp,
-                                    vertical = 12.dp
-                                ),
                                 onClick = {
                                     menuExpanded = false
-                                    /* TODO: Launch Video Picker */
                                 }
                             )
                         }
@@ -173,8 +161,6 @@ fun ComposeEntryScreen(
                 .padding(innerPadding),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-            // 1. The Audio / Manual Toggle Pill
             InputModeToggle(
                 tabs = inputTabs,
                 selectedIndex = pagerState.currentPage,
@@ -187,7 +173,6 @@ fun ComposeEntryScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 2. AI Prompt Bubble
             Surface(
                 color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f),
                 shape = RoundedCornerShape(24.dp),
@@ -205,14 +190,21 @@ fun ComposeEntryScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 3. Swipeable Input Area
             HorizontalPager(
                 state = pagerState,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.weight(1f) // Use weight to allow children to occupy remaining space
             ) { page ->
                 when (page) {
                     0 -> AudioInputView(viewModel)
-                    1 -> ManualInputView(viewModel, onNavigateBack,entryToEdit)
+                    1 -> ManualInputView(
+                        viewModel = viewModel,
+                        onNavigateBack = onNavigateBack,
+                        existingEntry = entryToEdit,
+                        selectedImgs = selectedImgs,
+                        onImagesChange = { selectedImgs = it },
+                        clickedImg = clickedImg,
+                        onImageClick = { clickedImg = it }
+                    )
                 }
             }
         }
@@ -257,8 +249,6 @@ fun InputModeToggle(tabs: List<String>, selectedIndex: Int, onTabSelected: (Int)
     }
 }
 
-// === Audio Mode View ===
-
 @Composable
 fun AudioInputView(viewModel: JournalViewModel) {
     val context = LocalContext.current
@@ -266,8 +256,6 @@ fun AudioInputView(viewModel: JournalViewModel) {
     var transcribedText by remember { mutableStateOf("") }
     var isRecording by remember { mutableStateOf(false) }
     var selectedMood by remember { mutableStateOf<MoodType?>(null) }
-
-
 
     val recognizerIntent = remember {
         Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -314,7 +302,6 @@ fun AudioInputView(viewModel: JournalViewModel) {
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // --- UI Logic: Hide when recording ---
         if (!isRecording && transcribedText.isEmpty()) {
             Text(
                 text = "Voice Entry",
@@ -323,10 +310,8 @@ fun AudioInputView(viewModel: JournalViewModel) {
             )
             Spacer(modifier = Modifier.height(32.dp))
             MockWaveform()
-
             Box(modifier = Modifier.weight(1f))
         } else {
-            // --- Live Transcription Window ---
             Spacer(modifier = Modifier.height(40.dp))
             Surface(
                 modifier = Modifier
@@ -361,13 +346,11 @@ fun AudioInputView(viewModel: JournalViewModel) {
             }
         }
 
-        // --- Controls ---
         Row(
             modifier = Modifier.padding(vertical = 32.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // Cancel/Clear button if text exists
             if (transcribedText.isNotEmpty() && !isRecording) {
                 IconButton(onClick = {
                     transcribedText = ""
@@ -377,7 +360,6 @@ fun AudioInputView(viewModel: JournalViewModel) {
                 }
             }
 
-            // Mic Button
             Surface(
                 onClick = {
                     if (isRecording) {
@@ -407,7 +389,6 @@ fun AudioInputView(viewModel: JournalViewModel) {
                 }
             }
 
-            // Save Button
             if (transcribedText.isNotEmpty() && !isRecording) {
                 IconButton(onClick = {
                     viewModel.saveEntry(transcribedText, mood = selectedMood?.name)
@@ -421,17 +402,20 @@ fun AudioInputView(viewModel: JournalViewModel) {
     }
 }
 
-// === Manual Mode View ===
 @Composable
-fun ManualInputView(viewModel: JournalViewModel, onNavigateBack: () -> Unit,existingEntry: JournalEntry?) {
-    // Pre-fill the text state if we are editing!
+fun ManualInputView(
+    viewModel: JournalViewModel,
+    onNavigateBack: () -> Unit,
+    existingEntry: JournalEntry?,
+    selectedImgs: List<String>,
+    onImagesChange: (List<String>) -> Unit,
+    clickedImg: String?,
+    onImageClick: (String?) -> Unit
+) {
     var textState by remember { mutableStateOf(existingEntry?.content ?: "") }
-
     val dateString = remember { SimpleDateFormat("MMM dd", Locale.getDefault()).format(Date()) }
     val timeString = remember { SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date()) }
 
-
-//    mood picker
     var selectedMood by remember {
         mutableStateOf(
             existingEntry?.mood?.let { moodName ->
@@ -439,14 +423,20 @@ fun ManualInputView(viewModel: JournalViewModel, onNavigateBack: () -> Unit,exis
             }
         )
     }
+    val scrollState = rememberScrollState()
+
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 24.dp)
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .imePadding()
+        ) {
             Text(
                 text = dateString,
                 style = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.SemiBold),
@@ -460,15 +450,15 @@ fun ManualInputView(viewModel: JournalViewModel, onNavigateBack: () -> Unit,exis
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            MoodPicker(selectedMood = selectedMood, onMoodSelected = {newMood->selectedMood=newMood})
+            MoodPicker(selectedMood = selectedMood, onMoodSelected = { newMood -> selectedMood = newMood })
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Textfield now grows with content and won't have its own scrollbar
             TextField(
                 value = textState,
                 onValueChange = { textState = it },
                 modifier = Modifier
-                    .weight(1f)
                     .fillMaxWidth(),
                 placeholder = { Text("Start typing your entry here...") },
                 colors = TextFieldDefaults.colors(
@@ -480,29 +470,40 @@ fun ManualInputView(viewModel: JournalViewModel, onNavigateBack: () -> Unit,exis
                 textStyle = MaterialTheme.typography.bodyLarge
             )
 
-            Spacer(modifier = Modifier.height(80.dp))
+            // Image grid follows naturally below the text
+            ImageGrid(
+                images = selectedImgs,
+                onImgClick = { onImageClick(it) }
+            )
+
+            Spacer(modifier = Modifier.height(100.dp))
         }
 
-        // Bottom Action Area (Only the Save FAB now, aligned to the end)
-        Row(
+        // FAB for saving
+        FloatingActionButton(
+            onClick = {
+                viewModel.saveEntry(textState, entryId = existingEntry?.id ?: 0, mood = selectedMood?.name, images = selectedImgs)
+                onNavigateBack()
+            },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .fillMaxWidth()
                 .padding(bottom = 24.dp),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            elevation = FloatingActionButtonDefaults.elevation(0.dp)
         ) {
-            FloatingActionButton(
-                onClick = {
-                    // Pass the existing ID so Room knows to update, not duplicate!
-                    viewModel.saveEntry(textState, entryId = existingEntry?.id?:0,mood=selectedMood?.name)
-                    onNavigateBack()
-                },
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                elevation = FloatingActionButtonDefaults.elevation(0.dp)
-            ) {
-                Icon(Icons.Default.Check, contentDescription = "Save Entry")
-            }
+            Icon(Icons.Default.Check, contentDescription = "Save Entry")
+        }
+
+        // Full-screen viewer
+        clickedImg?.let { path ->
+            FullScreenImgViewer(
+                imgPath = path,
+                onDismiss = { onImageClick(null) },
+                onDelete = {
+                    onImagesChange(selectedImgs.filter { it != path })
+                    onImageClick(null)
+                }
+            )
         }
     }
 }
@@ -523,6 +524,91 @@ fun MockWaveform() {
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))
             )
+        }
+    }
+}
+
+@Composable
+fun ImageGrid(images: List<String>, onImgClick: (String) -> Unit) {
+    if (images.isEmpty()) return
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        images.chunked(2).forEach { rowImages ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                rowImages.forEach { imgPath ->
+                    AsyncImage(
+                        model = imgPath,
+                        contentDescription = "journal Img",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .weight(1f)
+                            .aspectRatio(1f)
+                            .clip(RoundedCornerShape(16.dp))
+                            .border(
+                                1.dp,
+                                MaterialTheme.colorScheme.outlineVariant,
+                                RoundedCornerShape(16.dp)
+                            )
+                            .clickable { onImgClick(imgPath) }
+                    )
+                }
+                if (rowImages.size == 1) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun FullScreenImgViewer(imgPath: String, onDismiss: () -> Unit, onDelete: () -> Unit) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = Color.Black
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                AsyncImage(
+                    model = imgPath,
+                    contentDescription = "Full Screen Image",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                // Top Bar with Close and Delete
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .align(Alignment.TopCenter),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                    }
+
+                    IconButton(
+                        onClick = onDelete,
+                        modifier = Modifier.background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.White)
+                    }
+                }
+            }
         }
     }
 }

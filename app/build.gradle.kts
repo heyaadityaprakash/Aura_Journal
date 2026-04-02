@@ -92,6 +92,7 @@ dependencies {
 
     // Coil for image loading
     implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation("com.google.code.gson:gson:2.10.1")
 
 //    biometrics
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
