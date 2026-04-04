@@ -21,7 +21,7 @@ interface JournalDao{
 
 //    update
     @Update
-    abstract suspend fun updateWish(entry: JournalEntry)
+    suspend fun updateWish(entry: JournalEntry)
 
 //    delete
     @Delete

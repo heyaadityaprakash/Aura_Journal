@@ -1,6 +1,7 @@
 package com.aadi.aurajournal.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -148,8 +149,8 @@ fun StatsCard(
                     modifier = Modifier.weight(1f)
                 )
                 StatCard(
-                    title = "Best Streak",
-                    value = "🏆 $longestStreak",
+                    title = "Best🏆 ",
+                    value = "$longestStreak",
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -161,8 +162,14 @@ fun StatsCard(
 fun StatCard(title: String, value: String, modifier: Modifier = Modifier) {
     Surface(
         shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        modifier = modifier.height(72.dp)
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        modifier = modifier
+            .height(72.dp)
+            .border(
+                1.dp,
+                Color.White.copy(alpha = 0.2f),
+                RoundedCornerShape(20.dp)
+            )
     ) {
         Row(
             modifier = Modifier

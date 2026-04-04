@@ -19,20 +19,19 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -88,16 +87,36 @@ fun ComposeEntryScreen(
 
     val aiPromptText by viewModel.prompt.collectAsState()
 
-    LaunchedEffect(Unit) {
-        if (entryId == -1) {
-            viewModel.generateNewPrompt()
+    var showPromptBubble by remember { mutableStateOf(entryId == -1) }
+    var isGenerating by remember { mutableStateOf(false) }
+
+    // FIX: use aiPromptText as the key so it re-runs whenever the prompt updates
+    LaunchedEffect(aiPromptText) {
+        if (aiPromptText.isNotEmpty()) {
+            isGenerating = false
         }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { },
+                // FIX 1: pill moved into the title slot, centered between the two icon buttons
+                title = {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        InputModeToggle(
+                            tabs = inputTabs,
+                            selectedIndex = pagerState.currentPage,
+                            onTabSelected = { index ->
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(index)
+                                }
+                            }
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.Close, contentDescription = "Close")
@@ -130,6 +149,8 @@ fun ComposeEntryScreen(
                                 leadingIcon = { Icon(Icons.Default.Place, contentDescription = null) },
                                 onClick = {
                                     menuExpanded = false
+                                    Toast.makeText(context, "Coming soon!", Toast.LENGTH_SHORT).show()
+
                                 }
                             )
                             DropdownMenuItem(
@@ -137,13 +158,7 @@ fun ComposeEntryScreen(
                                 leadingIcon = { Icon(Icons.Default.MusicNote, contentDescription = null) },
                                 onClick = {
                                     menuExpanded = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Add Video") },
-                                leadingIcon = { Icon(Icons.Default.Videocam, contentDescription = null) },
-                                onClick = {
-                                    menuExpanded = false
+                                    Toast.makeText(context, "Coming soon!", Toast.LENGTH_SHORT).show()
                                 }
                             )
                         }
@@ -155,44 +170,80 @@ fun ComposeEntryScreen(
             )
         }
     ) { innerPadding ->
+        val scrollState = rememberScrollState()
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(innerPadding)
+                .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            InputModeToggle(
-                tabs = inputTabs,
-                selectedIndex = pagerState.currentPage,
-                onTabSelected = { index ->
-                    coroutineScope.launch {
-                        pagerState.animateScrollToPage(index)
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // FIX 2: prompt bubble cross pinned to far right via weight(1f) on text
+            if (showPromptBubble) {
+                Surface(
+                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f),
+                    shape = RoundedCornerShape(24.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                        .clickable {
+                            if (!isGenerating) {
+                                isGenerating = true
+                                viewModel.generateNewPrompt()
+                            }
+                        }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = if (aiPromptText.isEmpty()) Icons.Rounded.AutoAwesome else Icons.Rounded.Refresh,
+                            contentDescription = "AI prompt",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Text(
+                            text = when {
+                                isGenerating -> "Thinking..."
+                                aiPromptText.isEmpty() -> "Tap for a prompt"
+                                else -> aiPromptText
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f) // pushes X button to the far right
+                        )
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        IconButton(
+                            onClick = { showPromptBubble = false },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Dismiss",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Surface(
-                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f),
-                shape = RoundedCornerShape(24.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-            ) {
-                Text(
-                    text = aiPromptText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(16.dp)
-                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
             HorizontalPager(
                 state = pagerState,
-                modifier = Modifier.weight(1f) // Use weight to allow children to occupy remaining space
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
             ) { page ->
                 when (page) {
                     0 -> AudioInputView(viewModel)
@@ -448,18 +499,22 @@ fun ManualInputView(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            // FIX 3: separation between date/time and mood
+            Spacer(modifier = Modifier.height(12.dp))
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 4.dp),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+            )
+            Spacer(modifier = Modifier.height(12.dp))
 
             MoodPicker(selectedMood = selectedMood, onMoodSelected = { newMood -> selectedMood = newMood })
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Textfield now grows with content and won't have its own scrollbar
             TextField(
                 value = textState,
                 onValueChange = { textState = it },
-                modifier = Modifier
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("Start typing your entry here...") },
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
@@ -470,7 +525,6 @@ fun ManualInputView(
                 textStyle = MaterialTheme.typography.bodyLarge
             )
 
-            // Image grid follows naturally below the text
             ImageGrid(
                 images = selectedImgs,
                 onImgClick = { onImageClick(it) }
@@ -479,10 +533,14 @@ fun ManualInputView(
             Spacer(modifier = Modifier.height(100.dp))
         }
 
-        // FAB for saving
         FloatingActionButton(
             onClick = {
-                viewModel.saveEntry(textState, entryId = existingEntry?.id ?: 0, mood = selectedMood?.name, images = selectedImgs)
+                viewModel.saveEntry(
+                    textState,
+                    entryId = existingEntry?.id ?: 0,
+                    mood = selectedMood?.name,
+                    images = selectedImgs
+                )
                 onNavigateBack()
             },
             modifier = Modifier
@@ -494,7 +552,6 @@ fun ManualInputView(
             Icon(Icons.Default.Check, contentDescription = "Save Entry")
         }
 
-        // Full-screen viewer
         clickedImg?.let { path ->
             FullScreenImgViewer(
                 imgPath = path,
@@ -586,7 +643,6 @@ fun FullScreenImgViewer(imgPath: String, onDismiss: () -> Unit, onDelete: () -> 
                     modifier = Modifier.fillMaxSize()
                 )
 
-                // Top Bar with Close and Delete
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()

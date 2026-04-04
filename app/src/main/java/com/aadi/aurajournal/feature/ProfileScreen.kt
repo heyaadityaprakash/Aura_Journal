@@ -1,5 +1,7 @@
 package com.aadi.aurajournal.feature
 
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -139,7 +141,7 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             StatsCard(entries = entries)
-            
+
             Spacer(modifier = Modifier.height(24.dp))
 
 
@@ -183,7 +185,15 @@ fun ProfileScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { /* TODO: Open Help */ }
+                            .clickable {
+
+                                val intent = Intent(Intent.ACTION_SENDTO).apply {
+                                    data = Uri.parse("mailto:prakashaaditya68@gmail.com")
+                                    putExtra(Intent.EXTRA_SUBJECT, "Help & Support")
+                                    putExtra(Intent.EXTRA_TEXT, "Hi, I need help with...")
+                                }
+                                context.startActivity(intent)
+                            }
                             .padding(horizontal = 20.dp, vertical = 16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -204,7 +214,7 @@ fun ProfileScreen(
 
             // --- 4. Footer Text ---
             Text(
-                text = "aura v-1.2.2 (beta)",
+                text = "aura v-1.4",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 modifier = Modifier.fillMaxWidth(),

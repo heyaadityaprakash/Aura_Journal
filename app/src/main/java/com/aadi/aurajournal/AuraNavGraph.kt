@@ -93,12 +93,6 @@ fun AuraNavGraph(navController: NavHostController,
             ProfileScreen(viewModel = viewModel)
         }
 
-        composable("editor") {
-            ComposeEntryScreen(
-                viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
     }
 }
 
