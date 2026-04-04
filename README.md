@@ -14,7 +14,7 @@
 
 ---
 
-## 👋 Hey there! Welcome to AURA.
+## Welcome to AURA.
 Built with a soothing, mindful UI using Jetpack Compose, AURA allows you to effortlessly record your thoughts through intuitive real-time voice transcriptions or traditional typing. 
 
 Beyond simple note-taking, AURA leverages the power of the **Google Gemini AI SDK** to act as an intelligent companion—analyzing the sentiment of your entries to generate personalized mindfulness prompts and assign dynamic "Aura" colors based on your mood. Backed by a robust, offline-first architecture using Room and Firebase, your private reflections are always instantly accessible, securely synced, and beautifully presented.
@@ -23,7 +23,6 @@ Beyond simple note-taking, AURA leverages the power of the **Google Gemini AI SD
 
 ## 📱 Visuals
 
-*(Tip: Upload your screenshots to an `assets` folder in your repo and replace the links below)*
 
 <div align="center">
   <img src="https://github.com/heyaadityaprakash/Aura_Journal/raw/master/assets/iPhone%2017%20-%202.png" alt="Timeline Screen" width="155">
