@@ -3,6 +3,7 @@ package com.aadi.aurajournal.feature
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
@@ -41,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
 import com.aadi.aurajournal.JournalViewModel
 import com.aadi.aurajournal.data.JournalEntry
@@ -48,6 +50,7 @@ import com.aadi.aurajournal.data.MoodType
 import com.aadi.aurajournal.ui.components.MoodPicker
 import com.aadi.aurajournal.utils.copyUriToInternalStorage
 import kotlinx.coroutines.launch
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -90,7 +93,49 @@ fun ComposeEntryScreen(
     var showPromptBubble by remember { mutableStateOf(entryId == -1) }
     var isGenerating by remember { mutableStateOf(false) }
 
-    // FIX: use aiPromptText as the key so it re-runs whenever the prompt updates
+    // State to hold the temporary URI while the camera is open
+    var currentPhotoUri by remember { mutableStateOf<Uri?>(null) }
+
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture(),
+        onResult = { success ->
+            if (success) {
+                currentPhotoUri?.let { uri ->
+                    val internalPath = copyUriToInternalStorage(context, uri)
+                    internalPath?.let { path ->
+                        selectedImgs = selectedImgs + path
+                    }
+                }
+            }
+        }
+    )
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            if (isGranted) {
+                // Launch camera logic
+                val tempFile = File.createTempFile(
+                    "IMG_",
+                    ".jpg",
+                    context.externalCacheDir
+                )
+                val uri = FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.provider",
+                    tempFile
+                )
+                currentPhotoUri = uri
+                cameraLauncher.launch(uri)
+            } else {
+                Toast.makeText(context, "Camera permission is required to take photos", Toast.LENGTH_SHORT).show()
+            }
+        }
+    )
+
+
+    // aiPromptText as the key so it re-runs whenever the prompt updates
     LaunchedEffect(aiPromptText) {
         if (aiPromptText.isNotEmpty()) {
             isGenerating = false
@@ -135,8 +180,36 @@ fun ComposeEntryScreen(
                             modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHighest)
                         ) {
                             DropdownMenuItem(
+                                text = { Text("Open Camera") },
+                                leadingIcon = { Icon(Icons.Default.Camera, contentDescription = null) },
+                                onClick = {
+                                    menuExpanded = false
+
+                                    val permissionCheck = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
+                                    if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
+                                        //Create a temporary file in the app's cache directory
+                                        val tempFile = File.createTempFile(
+                                            "IMG_",
+                                            ".jpg",
+                                            context.externalCacheDir
+                                        )
+
+                                        val uri = FileProvider.getUriForFile(
+                                            context,
+                                            "com.aadi.aurajournal.provider",
+                                            tempFile
+                                        )
+
+                                        currentPhotoUri = uri
+                                        cameraLauncher.launch(uri)
+                                    } else {
+                                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                    }
+                                }
+                            )
+                            DropdownMenuItem(
                                 text = { Text("Add Image") },
-                                leadingIcon = { Icon(Icons.Default.Image, contentDescription = null) },
+                                leadingIcon = { Icon(Icons.Default.BrowseGallery, contentDescription = null) },
                                 onClick = {
                                     menuExpanded = false
                                     photoPickerLauncher.launch(

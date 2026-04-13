@@ -1,6 +1,5 @@
 package com.aadi.aurajournal.feature
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,6 +14,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -23,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.aadi.aurajournal.JournalViewModel
 import com.aadi.aurajournal.data.JournalEntry
+import com.aadi.aurajournal.utils.rememberLazyBottomBarState
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -31,7 +33,8 @@ import java.util.Locale
 @Composable
 fun CalendarScreen(
     viewModel: JournalViewModel,
-    onNavigateToEditor: (Int?) -> Unit
+    onNavigateToEditor: (Int?) -> Unit,
+    onShowBottomBar: (Boolean) -> Unit
 ) {
     val entries by viewModel.allEntries.collectAsState()
     val context = LocalContext.current
@@ -45,47 +48,43 @@ fun CalendarScreen(
         SimpleDateFormat("EEEE, MMMM dd", Locale.getDefault()).format(Date())
     }
 
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { onNavigateToEditor(null) },
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "new entry")
-            }
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            // --- 1. Header Area ---
-            Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)) {
-                Text(
-                    text = "Memories",
-                    style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onBackground
-                )
+    // 1. Initialize the state for the LazyColumn that tracks scrolling
+    val listState = rememberLazyBottomBarState(onShowBottomBar)
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-
-                Text(
-                    text = todayDateString,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // --- 2. Timeline List ---
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold { _ ->
+            // lazycolumn that handles scrolling
             LazyColumn(
-                contentPadding = PaddingValues(bottom = 80.dp),
-                modifier = Modifier.fillMaxSize()
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = 0.dp,
+                    end = 0.dp,
+                    top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 16.dp,
+                    bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 100.dp,
+                )
             ) {
+                // --- 1. Header Area ---
+                item {
+                    Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)) {
+                        Text(
+                            text = "Memories",
+                            style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = todayDateString,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                // --- 2. Timeline List ---
                 if (sortedEntries.isEmpty()) {
                     item {
                         Text(
@@ -108,6 +107,33 @@ fun CalendarScreen(
                 }
             }
         }
+
+        // 3. Top Gradient Fade
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 32.dp)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(MaterialTheme.colorScheme.background, Color.Transparent)
+                    )
+                )
+                .align(Alignment.TopCenter)
+        )
+
+        // 4. Bottom Gradient Fade
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(Color.Transparent, MaterialTheme.colorScheme.background.copy(alpha = 0.9f))
+                    )
+                )
+                .align(Alignment.BottomCenter)
+        )
+
     }
 }
 

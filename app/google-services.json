@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "690457020645",
+    "project_id": "journalapp-ed6d9",
+    "storage_bucket": "journalapp-ed6d9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:690457020645:android:4501ad7f3a769dbcc3ac0c",
+        "android_client_info": {
+          "package_name": "com.aadi.aurajournal"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "690457020645-g8s9q2bobspkhbbdj7u1u8o77toi1o08.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aadi.aurajournal",
+            "certificate_hash": "868269cd2a5f15f1c4c1257d207289c973a78795"
+          }
+        },
+        {
+          "client_id": "690457020645-v2inh46ir1ggu00fdv9pc0huqcd36gge.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDaFbHaaV4YrqLISii2mEhL3IJLNyYrsMs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "690457020645-v2inh46ir1ggu00fdv9pc0huqcd36gge.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

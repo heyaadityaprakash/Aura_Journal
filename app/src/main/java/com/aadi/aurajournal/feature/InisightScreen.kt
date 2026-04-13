@@ -1,7 +1,7 @@
 package com.aadi.aurajournal.feature
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -14,16 +14,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aadi.aurajournal.JournalViewModel
 import com.aadi.aurajournal.ui.components.AuraCard
+import com.aadi.aurajournal.utils.rememberScrollBottomBarState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InsightsScreen(
     viewModel: JournalViewModel,
-    onNavigateToEditor: (Int?) -> Unit
+    onNavigateToEditor: (Int?) -> Unit,
+    onShowBottomBar: (Boolean) -> Unit
 ) {
     // 1. COLLECT THE STATES FROM THE VIEWMODEL
     val weeklySummary by viewModel.weeklySummary.collectAsState()
@@ -36,68 +39,99 @@ fun InsightsScreen(
         viewModel.getInsights()
     }
 
-    Scaffold { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 24.dp)
-        ) {
+    // Use the custom scroll state that handles the bottom bar visibility
+    val scrollState = rememberScrollBottomBarState(onShowBottomBar)
 
-            // Header
-            Text(
-                text = "Insights",
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onBackground
-            )
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .verticalScroll(scrollState)
+                    .padding(horizontal = 24.dp, vertical = 24.dp)
+            ) {
 
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = "A gentle look back at your journey.",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // 3. CONDITIONAL RENDERING (SPINNER VS. CARDS)
-            if (isLoading) {
-                // Show a centered loading spinner while Gemini is thinking
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(200.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text("Reading your entries...", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            } else {
-                // Show the cards.
-
-                // --- 1. The Weekly Aura Card ---
-                WeeklyAuraCard(summary = weeklySummary)
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // --- 2. Connecting the Dots ---
-                if (patterns.isNotEmpty()) {
-                    PatternsCard(patterns = patterns)
-                    Spacer(modifier = Modifier.height(24.dp))
-                }
-
-                // --- 3. Forward Focus ---
-                ActionablePromptCard(
-                    prompt = suggestedPrompt,
-                    onWriteClick = { onNavigateToEditor(null) }
+                // Header
+                Text(
+                    text = "Insights",
+                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onBackground
                 )
-            }
 
-            Spacer(modifier = Modifier.height(80.dp)) // Padding for bottom nav bar
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "A gentle look back at your journey.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // 3. CONDITIONAL RENDERING (SPINNER VS. CARDS)
+                if (isLoading) {
+                    // Show a centered loading spinner while Gemini is thinking
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text("Reading your entries...", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                } else {
+                    // Show the cards.
+
+                    // --- 1. The Weekly Aura Card ---
+                    WeeklyAuraCard(summary = weeklySummary)
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // --- 2. Connecting the Dots ---
+                    if (patterns.isNotEmpty()) {
+                        PatternsCard(patterns = patterns)
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
+
+                    // --- 3. Forward Focus ---
+                    ActionablePromptCard(
+                        prompt = suggestedPrompt,
+                        onWriteClick = { onNavigateToEditor(null) }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(100.dp)) // Padding for bottom nav bar
+            }
         }
+
+        // Top Gradient Fade
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 32.dp)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(MaterialTheme.colorScheme.background, Color.Transparent)
+                    )
+                )
+                .align(Alignment.TopCenter)
+        )
+
+        // Bottom Gradient Fade
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(Color.Transparent, MaterialTheme.colorScheme.background.copy(alpha = 0.9f))
+                    )
+                )
+                .align(Alignment.BottomCenter)
+        )
     }
 }
 

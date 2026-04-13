@@ -53,7 +53,7 @@ fun VoiceNoteItem(
             )
             Text(
                 text = timeString,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
             )
         }

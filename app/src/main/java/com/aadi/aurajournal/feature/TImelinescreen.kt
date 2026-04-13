@@ -1,6 +1,8 @@
 package com.aadi.aurajournal.feature
 
+import android.annotation.SuppressLint
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -14,146 +16,205 @@ import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.EmojiEmotions
 import androidx.compose.material.icons.rounded.RocketLaunch
 import androidx.compose.material.icons.rounded.Search
-
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.aadi.aurajournal.JournalViewModel
 import com.aadi.aurajournal.data.JournalEntry
 import com.aadi.aurajournal.ui.components.AuraCard
 import com.aadi.aurajournal.ui.components.VoiceNoteItem
-
+import com.aadi.aurajournal.utils.rememberLazyBottomBarState
+import com.google.firebase.auth.FirebaseAuth
 import java.util.Calendar
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun TimelineScreen(
     viewModel: JournalViewModel,
-    onNavigateToEditor:(Int?)->Unit
-){
+    onNavigateToEditor: (Int?) -> Unit,
+    onShowBottomBar: (Boolean) -> Unit,
+    onNavigateToProfile:()->Unit
+) {
+    val context = LocalContext.current
 
-    val context= LocalContext.current
+    val currentUser = remember { FirebaseAuth.getInstance().currentUser }
+    val googleName = currentUser?.displayName ?: "user"
+    val profilePicUrl = currentUser?.photoUrl
 
-//    fetch and update from database
+    // fetch and update from database
     val entries by viewModel.allEntries.collectAsState()
     val username by viewModel.username.collectAsState()
-//    entries to delete
+
+    // entries to delete
     var entryToDelete by remember { mutableStateOf<JournalEntry?>(null) }
 
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { onNavigateToEditor(null) },
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "new entry")
-            }
-        }
-    ) {
-        innerPading->
-//        lazycolumn that handles scrolling
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPading),
-            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 24.dp)
+    // hook handles all scroll-hide logic
+    val listState = rememberLazyBottomBarState(onShowBottomBar)
 
-        ) {
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Welcome, $username",
-                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Medium),
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
 
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.secondaryContainer,
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(Icons.Default.AccountCircle, contentDescription = "profile")
 
-                    }
-
-                }
-                Spacer(modifier = Modifier.height(24.dp))
-
-            }
-            item {
-                MoodCheckInCard()
-                Spacer(modifier = Modifier.height(32.dp))
-            }
-
-//            Saved Notes List
-
-            item {
-                Text(
-                    text = "Saved Entries",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onBackground
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold { _ ->
+            // lazycolumn that handles scrolling
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = 24.dp,
+                    end = 24.dp,
+                    top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 16.dp,
+                    bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 100.dp,
                 )
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+            ) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Welcome, ${username.ifBlank { googleName }}",
+                            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Medium),
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
 
-            if(entries.isEmpty()){
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            modifier = Modifier
+                                .size(48.dp).
+                                clickable{onNavigateToProfile()},
+
+                        ) {
+                            if (profilePicUrl != null) {
+                                AsyncImage(
+                                    model = profilePicUrl,
+                                    contentDescription = "profile",
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Icon(
+                                    Icons.Default.AccountCircle,
+                                    contentDescription = "profile",
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+
+                item {
+                    MoodCheckInCard()
+                    Spacer(modifier = Modifier.height(32.dp))
+                }
+
                 item {
                     Text(
-                        text = "Tap the + button to start journaling",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                }
-            }
-            else {
-                items(entries) { entry ->
-                    VoiceNoteItem(
-                        entry = entry,
-                        onClick = { onNavigateToEditor(entry.id) },
-                        onDelete = { entryToDelete = entry }
+                        text = "Saved Entries",
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
+
+                if (entries.isEmpty()) {
+                    item {
+                        Text(
+                            text = "Tap the + button to start journaling",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
+                    }
+                } else {
+                    items(entries) { entry ->
+                        VoiceNoteItem(
+                            entry = entry,
+                            onClick = { onNavigateToEditor(entry.id) },
+                            onDelete = { entryToDelete = entry }
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                }
+
+                // Add some padding at the bottom so the FAB doesn't cover the last item
+                item { Spacer(modifier = Modifier.height(80.dp)) }
             }
-
-
-// Add some padding at the bottom so the FAB doesn't cover the last item
-            item { Spacer(modifier = Modifier.height(80.dp)) }
-
-
-
         }
+
+        // Gradient fade at the top over the status bar area
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 32.dp)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.background,
+                            Color.Transparent
+                        )
+                    )
+                )
+                .align(Alignment.TopCenter)
+        )
+
+        // Gradient fade at the bottom before the nav bar
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            MaterialTheme.colorScheme.background.copy(alpha = 0.9f)
+                        )
+                    )
+                )
+                .align(Alignment.BottomCenter)
+        )
+
+//        // FAB moved outside Scaffold to be on top of the gradients and correctly aligned
+//        FloatingActionButton(
+//            onClick = { onNavigateToEditor(null) },
+//            modifier = Modifier
+//                .align(Alignment.BottomEnd)
+//                .padding(end = 24.dp, bottom = 100.dp),
+//            containerColor = MaterialTheme.colorScheme.primaryContainer,
+//            elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp)
+//        ) {
+//            Icon(Icons.Default.Add, contentDescription = "new entry")
+//        }
     }
 
-    //            delete dialog box
-    if(entryToDelete!=null){
+    // delete dialog box
+    if (entryToDelete != null) {
         AlertDialog(
-            onDismissRequest = {entryToDelete=null},
+            onDismissRequest = { entryToDelete = null },
             title = { Text("Delete Entry?") },
             text = { Text("Are you sure you want to permanently delete this journal entry?") },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        viewModel.deleteEntry(entryToDelete!!)
-                        entryToDelete=null
-                        Toast.makeText(context, "Entry deleted", Toast.LENGTH_SHORT).show()
+                        entryToDelete?.let { entry ->
+                            viewModel.deleteEntry(entry)
+                            entryToDelete = null
+                            Toast.makeText(context, "Entry deleted", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 ) {
                     Text("Delete")
@@ -161,33 +222,25 @@ fun TimelineScreen(
             },
             dismissButton = {
                 TextButton(
-                    onClick = {
-                        entryToDelete=null
-                    }
+                    onClick = { entryToDelete = null }
                 ) {
                     Text("Cancel")
                 }
             }
-
-
         )
     }
-
 }
 
 @Composable
 fun MoodCheckInCard() {
-    // State to track which mood is selected (for demonstration)
     var selectedMood by remember { mutableStateOf("Calm") }
+    val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
 
-    val hour= Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-
-    val greeting=when(hour){
-        in 0..11->"Good Morning"
-        in 12..17->"Good Afternoon"
-        in 18..22->"Good Evening"
+    val greeting = when (hour) {
+        in 0..11 -> "Good Morning"
+        in 12..17 -> "Good Afternoon"
+        in 18..22 -> "Good Evening"
         else -> "Time for Bed"
-
     }
 
     val gradient = Brush.linearGradient(
@@ -210,13 +263,12 @@ fun MoodCheckInCard() {
 
         Text(
             text = "How are you feeling?",
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Evenly distribute mood buttons
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
@@ -251,13 +303,12 @@ fun MoodAction(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.clickable(
             onClick = onClick,
-            indication = null, // Removes gray ripple if desired
+            indication = null,
             interactionSource = remember { MutableInteractionSource() }
         )
     ) {
         Surface(
             shape = CircleShape,
-            // Highlight color when selected
             color = if (isSelected) MaterialTheme.colorScheme.primary
             else MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
             modifier = Modifier.size(56.dp)

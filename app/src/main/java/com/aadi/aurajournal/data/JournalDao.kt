@@ -17,7 +17,7 @@ interface JournalDao{
 
 //    insert
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertEntry(entry: JournalEntry)
+    suspend fun insertEntry(entry: JournalEntry): Long
 
 //    update
     @Update

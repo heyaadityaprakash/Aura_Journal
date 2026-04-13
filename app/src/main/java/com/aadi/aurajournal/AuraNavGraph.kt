@@ -1,21 +1,9 @@
 package com.aadi.aurajournal
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -26,16 +14,30 @@ import com.aadi.aurajournal.feature.ComposeEntryScreen
 import com.aadi.aurajournal.feature.InsightsScreen
 import com.aadi.aurajournal.feature.ProfileScreen
 import com.aadi.aurajournal.feature.TimelineScreen
+import com.aadi.aurajournal.ui.components.LoginScreen
 
 @Composable
-fun AuraNavGraph(navController: NavHostController,
-                 innerPadding: PaddingValues,
-                 viewModel: JournalViewModel) {
+fun AuraNavGraph(
+    navController: NavHostController,
+    innerPadding: PaddingValues,
+    viewModel: JournalViewModel,
+    startDestination: String,
+    loginViewModel: LoginViewModel,
+    onShowBottomBar: (Boolean) -> Unit
+) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Timeline.route,
+        startDestination = startDestination,
         modifier = Modifier.padding(innerPadding)
     ) {
+        composable("login") {
+            LoginScreen(
+                viewModel = loginViewModel,
+                onNavigateToHome = {
+                    navController.navigate(Screen.Timeline.route)
+                }
+            )
+        }
 
         composable(
             route = "editor?entryId={entryId}",
@@ -48,60 +50,62 @@ fun AuraNavGraph(navController: NavHostController,
 
             ComposeEntryScreen(
                 viewModel = viewModel,
-                entryId = entryId, // Pass the ID into the screen
+                entryId = entryId,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
 
-
-        // We will replace these Placeholders with actual screen files on Day 4
         composable(Screen.Timeline.route) {
             TimelineScreen(
-                viewModel=viewModel,
-                onNavigateToEditor = {
-                    entryId->
-                    if(entryId==null){
-                        //open new entry page
+                viewModel = viewModel,
+                onNavigateToEditor = { entryId ->
+                    if (entryId == null) {
                         navController.navigate("editor")
-                    }else{
-                        //edit page
+                    } else {
                         navController.navigate("editor?entryId=$entryId")
-
+                    }
+                },
+                onShowBottomBar = onShowBottomBar,
+                onNavigateToProfile = {
+                    navController.navigate(Screen.Profile.route) {
+                        popUpTo(Screen.Timeline.route)
+                        launchSingleTop = true
                     }
                 }
             )
-            
         }
+
         composable(Screen.Calendar.route) {
             CalendarScreen(
                 viewModel = viewModel,
                 onNavigateToEditor = { entryId ->
                     if (entryId == null) navController.navigate("editor")
                     else navController.navigate("editor?entryId=$entryId")
-                }
+                },
+                onShowBottomBar = onShowBottomBar
             )
         }
+
         composable(Screen.Insights.route) {
             InsightsScreen(
-                viewModel=viewModel,
-                onNavigateToEditor = {navController.navigate("editor")}
+                viewModel = viewModel,
+                onNavigateToEditor = { navController.navigate("editor") },
+                onShowBottomBar = onShowBottomBar
             )
         }
 
-
         composable(Screen.Profile.route) {
-            ProfileScreen(viewModel = viewModel)
-        }
-
-    }
-}
-
-// Temporary Composable to test routing
-@Composable
-fun PlaceholderScreen(title: String) {
-    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(text = title, style = MaterialTheme.typography.headlineMedium)
+            ProfileScreen(
+                viewModel = viewModel,
+                onShowBottomBar = onShowBottomBar,
+                onSignOut ={
+                    loginViewModel.handleLogOut()
+                    navController.navigate("login"){
+                        popUpTo(0) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            )
         }
     }
 }
