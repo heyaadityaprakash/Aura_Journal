@@ -16,10 +16,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.aadi.aurajournal.JournalViewModel
 import com.aadi.aurajournal.ui.components.AuraCard
 import com.aadi.aurajournal.utils.rememberScrollBottomBarState
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,6 +31,37 @@ fun InsightsScreen(
     onNavigateToEditor: (Int?) -> Unit,
     onShowBottomBar: (Boolean) -> Unit
 ) {
+    //only logged in user access AI
+    val currentUser = remember { FirebaseAuth.getInstance().currentUser }
+
+    if(currentUser == null){
+        //ask them to login
+        Column(
+            modifier = Modifier.fillMaxSize().padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.AutoAwesome, // The sparkle icon
+                contentDescription = "AI Insights",
+                modifier = Modifier.size(64.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Unlock AI Insights",
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Sign in with Google to let AURA's AI analyze your emotional patterns, generate personalized mindfulness prompts, and summarize your mood trends.",
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            }
+        return
+    }
+
     // 1. COLLECT THE STATES FROM THE VIEWMODEL
     val weeklySummary by viewModel.weeklySummary.collectAsState()
     val patterns by viewModel.patterns.collectAsState()

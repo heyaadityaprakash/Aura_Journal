@@ -36,4 +36,9 @@ class LoginViewModel (private val authRepository: AuthRepository): ViewModel() {
             _loginSuccess.value = false
         }
     }
+
+    fun continueAsGuest(){
+        authRepository.setGuestMode(true)
+        _loginSuccess.value = true
+    }
 }

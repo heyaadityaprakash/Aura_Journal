@@ -24,8 +24,8 @@ android {
         applicationId = "com.aadi.aurajournal"
         minSdk = 29
         targetSdk = 35
-        versionCode = 14
-        versionName = "1.4"
+        versionCode = 25
+        versionName = "2.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -59,27 +59,31 @@ android {
 }
 
 dependencies {
+    //for notifiaction
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+
     implementation(platform("com.google.firebase:firebase-bom:34.12.0"))
     // Auth and Firestore
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
-    // Google Play Services for the modern Credential Manager Sign-in
-    implementation("androidx.credentials:credentials:1.2.1")
-    implementation("androidx.credentials:credentials-play-services-auth:1.2.1")
-    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.0")
+    // Google Play Services for the modern Credential Manager Sign-in - Updated for Android 14+ support
+    implementation("androidx.credentials:credentials:1.5.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.5.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+
     // Using Version Catalog (libs.*) consistently to avoid version conflicts and duplication
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    
+
     // Additional Material 3 components
     implementation("androidx.compose.material3:material3-window-size-class")
 
     // Icons - Note: material-icons-extended is large. R8 will help strip unused ones.
     implementation("androidx.compose.material:material-icons-extended")
-    
+
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.8.0")
 

@@ -1,5 +1,6 @@
 package com.aadi.aurajournal.ui
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -46,6 +48,11 @@ fun AuraBottomBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(end = 72.dp) // leave space for FAB
+                .border(
+                    1.dp,
+                    Color.White.copy(alpha = 0.2f),
+                    RoundedCornerShape(50.dp)
+                )
                 .clip(RoundedCornerShape(50.dp)),
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
             tonalElevation = 8.dp,

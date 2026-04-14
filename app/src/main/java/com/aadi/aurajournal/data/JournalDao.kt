@@ -26,4 +26,8 @@ interface JournalDao{
 //    delete
     @Delete
     suspend fun deleteEntry(entry: JournalEntry)
+
+    // Check if there's any entry between midnight today and midnight tomorrow
+    @Query("SELECT COUNT(*) FROM journal_entries WHERE timeStamp >= :startOfDay AND timeStamp < :endOfDay")
+    suspend fun getEntryCountForDateRange(startOfDay: Long, endOfDay: Long): Int
 }

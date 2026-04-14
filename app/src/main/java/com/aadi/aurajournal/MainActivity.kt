@@ -1,9 +1,13 @@
 package com.aadi.aurajournal
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -15,52 +19,81 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.aadi.aurajournal.ui.AuraBottomBar
-import com.aadi.aurajournal.ui.theme.AuraJournalTheme
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.aadi.aurajournal.data.AuraDatabase
 import com.aadi.aurajournal.data.FirestoreManager
 import com.aadi.aurajournal.data.JournalRepository
+import com.aadi.aurajournal.ui.AuraBottomBar
+import com.aadi.aurajournal.ui.theme.AuraJournalTheme
+import com.aadi.aurajournal.utils.ReminderWorker
 import com.aadi.aurajournal.utils.authenticateWithBiometrics
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import java.util.concurrent.TimeUnit
 
 class MainActivity : FragmentActivity() {
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            scheduleDailyReminder()
+        } else {
+            Toast.makeText(this, "Notification permission denied", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        askNotificationPermission()
         enableEdgeToEdge()
+
         setContent {
             val context = LocalContext.current
             val database = AuraDatabase.getDatabase(context)
-            
-            // Background scope for repository sync
-            val externalScope = lifecycleScope 
-            
-            val repository = remember { 
+
+            // Better external scope (not tied directly to Activity lifecycle)
+            val externalScope = remember {
+                CoroutineScope(SupervisorJob() + Dispatchers.IO)
+            }
+
+            val repository = remember {
                 JournalRepository(
-                    journalDao = database.journalDao(), 
+                    journalDao = database.journalDao(),
                     firestoreManager = FirestoreManager(),
                     context = context,
                     externalScope = externalScope
-                ) 
+                )
             }
 
             val navController = rememberNavController()
 
             val authRepository = remember { AuthRepository(context) }
+
             val loginViewModel: LoginViewModel = viewModel(
                 factory = object : ViewModelProvider.Factory {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        return LoginViewModel(authRepository) as T
+                        if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
+                            @Suppress("UNCHECKED_CAST")
+                            return LoginViewModel(authRepository) as T
+                        }
+                        throw IllegalArgumentException("Unknown ViewModel class")
                     }
                 }
             )
 
-            val journalviewModel: JournalViewModel = viewModel(
+            val journalViewModel: JournalViewModel = viewModel(
                 factory = JournalViewModelFactory(repository)
             )
 
@@ -80,21 +113,26 @@ class MainActivity : FragmentActivity() {
 
             AuraJournalTheme {
                 if (isUnlocked) {
+
                     val navBackStackEntry by navController.currentBackStackEntryAsState()
                     val currentRoute = navBackStackEntry?.destination?.route
 
-
+                    // FIXED: removed remember (so it updates correctly)
                     val startDest = remember {
-                        if(authRepository.isUserSignedIn()) Screen.Timeline.route else "login"
+                        if (authRepository.isUserSignedIn() || authRepository.isGuestMode()) {
+                            Screen.Timeline.route
+                        } else {
+                            "login"
+                        }
                     }
 
-                    // Route-based visibility
-                    val isBaseRoute = currentRoute != null && !currentRoute.startsWith("editor") && currentRoute!=("login")
+                    val isBaseRoute =
+                        currentRoute != null &&
+                                !currentRoute.startsWith("editor") &&
+                                currentRoute != "login"
 
-                    // Scroll-based visibility
                     var isBottomBarVisible by remember { mutableStateOf(true) }
 
-                    // Reset visibility when route changes
                     LaunchedEffect(currentRoute) {
                         isBottomBarVisible = true
                     }
@@ -106,21 +144,27 @@ class MainActivity : FragmentActivity() {
                                 enter = slideInVertically(initialOffsetY = { it }),
                                 exit = slideOutVertically(targetOffsetY = { it }),
                             ) {
-                                AuraBottomBar(navController = navController, onNavigateToEditor ={navController.navigate("editor")})
+                                AuraBottomBar(
+                                    navController = navController,
+                                    onNavigateToEditor = {
+                                        navController.navigate("editor")
+                                    }
+                                )
                             }
                         }
                     ) { innerPadding ->
                         AuraNavGraph(
                             navController = navController,
                             innerPadding = innerPadding,
-                            viewModel = journalviewModel,
+                            viewModel = journalViewModel,
                             onShowBottomBar = { isBottomBarVisible = it },
                             startDestination = startDest,
                             loginViewModel = loginViewModel
                         )
                     }
+
                 } else {
-                    // Splash or Lock screen background while waiting for authentication
+                    // Locked screen background
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -130,4 +174,32 @@ class MainActivity : FragmentActivity() {
             }
         }
     }
+
+    private fun askNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                scheduleDailyReminder()
+            } else {
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        } else {
+            scheduleDailyReminder()
+        }
+    }
+
+    private fun scheduleDailyReminder() {
+        val reminderRequest =
+            PeriodicWorkRequestBuilder<ReminderWorker>(24, TimeUnit.HOURS).build()
+
+        WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
+            "DailyJournalReminder",
+            ExistingPeriodicWorkPolicy.UPDATE,
+            reminderRequest
+        )
+    }
 }
+
