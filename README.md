@@ -38,7 +38,8 @@ Beyond simple note-taking, AURA leverages the power of the **Google Gemini AI SD
 
 Want to see it in action without building from source? You can download the latest APK right here.
 
-👉 **[Download AURA App (v1.2) APK](https://drive.google.com/file/d/1pG5u69B3sA8JzlUE2zXqeNLeiQTozcbA/view?usp=sharing)**
+
+**[Download AURA App (v1.2) APK](https://drive.google.com/file/d/1pG5u69B3sA8JzlUE2zXqeNLeiQTozcbA/view?usp=sharing)**
 
 ---
 
@@ -61,13 +62,3 @@ Want to see it in action without building from source? You can download the late
 * **Cloud & Auth:** Firebase Firestore, Firebase Authentication
 * **AI Integration:** Google Gemini Generative AI SDK
 * **Hardware APIs:** Android SpeechRecognizer API
-
----
-
-## 💻 Building Locally
-
-If you are a developer and want to run this project on your local machine, here's how:
-
-1. **Clone the repository:**
-   ```bash
-   git clone [https://github.com/heyaadityaprakash/Aura-Journal.git](https://github.com/heyaadityaprakash/Aura-Journal.git)
