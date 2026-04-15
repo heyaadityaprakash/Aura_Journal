@@ -1,5 +1,6 @@
 package com.aadi.aurajournal.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -47,7 +48,8 @@ fun AuraBottomBar(
         NavigationBar(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(end = 72.dp) // leave space for FAB
+                .padding(end = 80.dp) // leave space for FAB
+                .height(64.dp)
                 .border(
                     1.dp,
                     Color.White.copy(alpha = 0.2f),
@@ -71,11 +73,23 @@ fun AuraBottomBar(
                         }
                     },
                     colors = NavigationBarItemDefaults.colors(
-                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                        indicatorColor = Color.Transparent,
                         selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        selectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
                         unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    ),
+                    //custom bottom navbar color
+                    modifier = Modifier
+                        .padding(vertical = 6.dp, horizontal = 8.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .then(
+                            if (currentRoute == screen.route) {
+                                Modifier
+                                    .background(MaterialTheme.colorScheme.primaryContainer)
+                                    .padding(vertical = 4.dp)
+                            } else Modifier
+                        )
                 )
             }
         }
@@ -85,7 +99,7 @@ fun AuraBottomBar(
             onClick = { onNavigateToEditor(null) },
             modifier = Modifier
                 .align(Alignment.CenterEnd)
-                .size(56.dp),
+                .size(64.dp),
             shape = CircleShape,
             colors = IconButtonDefaults.filledIconButtonColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer,

@@ -15,7 +15,8 @@ class JournalRepository(
     private val prefs = context.getSharedPreferences("aura_journal_prefs", Context.MODE_PRIVATE)
 
     fun getUsername(): String {
-        return prefs.getString("username", "User") ?: "User"
+        // Change default from "User" to "" so that the UI can correctly fall back to Google Name
+        return prefs.getString("username", "") ?: ""
     }
 
     fun saveUsername(username: String) {

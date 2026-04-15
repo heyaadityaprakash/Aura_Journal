@@ -47,13 +47,22 @@ fun TimelineScreen(
 ) {
     val context = LocalContext.current
 
-    val currentUser = remember { FirebaseAuth.getInstance().currentUser }
-    val googleName = currentUser?.displayName ?: "user"
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val googleName = currentUser?.displayName?.takeIf { it.isNotBlank() } 
+        ?: currentUser?.email?.substringBefore("@")?.replaceFirstChar { it.uppercase() } 
+        ?: "User"
     val profilePicUrl = currentUser?.photoUrl
 
     // fetch and update from database
     val entries by viewModel.allEntries.collectAsState()
     val username by viewModel.username.collectAsState()
+
+    // Sync google name to repository if not set
+    LaunchedEffect(googleName) {
+        if (username.isBlank() && googleName != "User" && currentUser != null) {
+            viewModel.updateUsername(googleName)
+        }
+    }
 
     // entries to delete
     var entryToDelete by remember { mutableStateOf<JournalEntry?>(null) }

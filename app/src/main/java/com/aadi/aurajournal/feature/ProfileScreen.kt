@@ -57,8 +57,8 @@ fun ProfileScreen(
 
     val context = androidx.compose.ui.platform.LocalContext.current
 
-    val currentUser = remember { FirebaseAuth.getInstance().currentUser }
-    val googleName = currentUser?.displayName ?: "user"
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val googleName = currentUser?.displayName?.takeIf { it.isNotBlank() } ?: "User"
     val googleEmail = currentUser?.email
     val profilePicUrl = currentUser?.photoUrl
 
@@ -66,7 +66,7 @@ fun ProfileScreen(
     val username by viewModel.username.collectAsState()
 
     var showDailog by remember { mutableStateOf(false) }
-    var tempname by remember { mutableStateOf(username.ifBlank { googleName }) }
+    var tempname by remember(username, googleName) { mutableStateOf(username.ifBlank { googleName }) }
     // States for the interactive elements
     var isDarkMode by remember { mutableStateOf(false) }
 

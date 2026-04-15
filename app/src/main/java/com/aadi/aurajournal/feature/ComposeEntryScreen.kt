@@ -584,6 +584,13 @@ fun ManualInputView(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            //add images
+            ImageGrid(
+                images = selectedImgs,
+                onImgClick = { onImageClick(it) }
+            )
+
+            //where user will write
             TextField(
                 value = textState,
                 onValueChange = { textState = it },
@@ -598,10 +605,7 @@ fun ManualInputView(
                 textStyle = MaterialTheme.typography.bodyLarge
             )
 
-            ImageGrid(
-                images = selectedImgs,
-                onImgClick = { onImageClick(it) }
-            )
+
 
             Spacer(modifier = Modifier.height(100.dp))
         }
@@ -662,40 +666,150 @@ fun MockWaveform() {
 fun ImageGrid(images: List<String>, onImgClick: (String) -> Unit) {
     if (images.isEmpty()) return
 
+    val items = images.take(4)
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 16.dp),
+            .padding(vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        images.chunked(2).forEach { rowImages ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                rowImages.forEach { imgPath ->
-                    AsyncImage(
-                        model = imgPath,
-                        contentDescription = "journal Img",
-                        contentScale = ContentScale.Crop,
+        when(items.size){
+            1->{
+                MediaDisplay(
+                    url = items[0],
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(240.dp),
+                    onClick = {onImgClick(items[0])}
+                )
+
+
+            }
+            2->{
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    items.forEach {
+                        url->
+                        MediaDisplay(
+                            url = url,
+                            modifier = Modifier
+                                .weight(1f)
+                                .aspectRatio(1f),
+                            onClick = {onImgClick(url)}
+                        )
+                    }
+                }
+
+            }
+            3->{
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(220.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    MediaDisplay(
+                        url = items[0],
                         modifier = Modifier
                             .weight(1f)
-                            .aspectRatio(1f)
-                            .clip(RoundedCornerShape(16.dp))
-                            .border(
-                                1.dp,
-                                MaterialTheme.colorScheme.outlineVariant,
-                                RoundedCornerShape(16.dp)
-                            )
-                            .clickable { onImgClick(imgPath) }
+                            .fillMaxHeight(),
+                        onClick = { onImgClick(items[0]) }
                     )
+
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        MediaDisplay(
+                            url = items[1],
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth(),
+                            onClick = { onImgClick(items[1]) }
+                        )
+
+                        MediaDisplay(
+                            url = items[2],
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth(),
+                            onClick = { onImgClick(items[2]) }
+                        )
+                    }
+
                 }
-                if (rowImages.size == 1) {
-                    Spacer(modifier = Modifier.weight(1f))
+
+            }
+            else -> {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    items.chunked(2).forEach {
+                        row->
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            row.forEach { url ->
+                                MediaDisplay(
+                                    url = url,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .aspectRatio(1f),
+                                    onClick = { onImgClick(url) }
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
+
+//        images.chunked(2).forEach { rowImages ->
+//            Row(
+//                modifier = Modifier.fillMaxWidth(),
+//                horizontalArrangement = Arrangement.spacedBy(8.dp)
+//            ) {
+//                rowImages.forEach { imgPath ->
+//                    AsyncImage(
+//                        model = imgPath,
+//                        contentDescription = "journal Img",
+//                        contentScale = ContentScale.Crop,
+//                        modifier = Modifier
+//                            .weight(1f)
+//                            .aspectRatio(1f)
+//                            .clip(RoundedCornerShape(16.dp))
+//                            .border(
+//                                1.dp,
+//                                MaterialTheme.colorScheme.outlineVariant,
+//                                RoundedCornerShape(16.dp)
+//                            )
+//                            .clickable { onImgClick(imgPath) }
+//                    )
+//                }
+//                if (rowImages.size == 1) {
+//                    Spacer(modifier = Modifier.weight(1f))
+//                }
+//            }
+//        }
     }
+}
+
+@Composable
+fun MediaDisplay(url: String,modifier: Modifier= Modifier,onClick:()->Unit){
+    AsyncImage(
+        model = url,
+        contentDescription = null,
+        contentScale = ContentScale.Crop,
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .clickable { onClick() }
+    )
 }
 
 @Composable
