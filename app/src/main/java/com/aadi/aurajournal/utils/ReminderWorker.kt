@@ -42,7 +42,7 @@ class ReminderWorker (
                 title = "Don't break your streak! 🔥"
                 message = "You're on a $curentStreak day streak. Take a minute to log your aura today."
             }else{
-                title = "How was your day? ✨"
+                title = "How was your day? "
                 message = "Capture your thoughts and let AI analyze your aura."
             }
             showNotification(title,message)

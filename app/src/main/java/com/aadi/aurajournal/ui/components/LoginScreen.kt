@@ -1,5 +1,6 @@
 package com.aadi.aurajournal.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -10,10 +11,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.aadi.aurajournal.LoginViewModel
+import com.aadi.aurajournal.R
 
 @Composable
 fun LoginScreen(
@@ -47,16 +51,19 @@ fun LoginScreen(
         ) {
             // App Logo Placeholder (Mimics the blue icon in your image using Material colors)
             Surface(
-                modifier = Modifier.size(100.dp),
-                shape = CircleShape,
+                modifier = Modifier.size(140.dp),
+                shape = RoundedCornerShape(28.dp),
                 color = MaterialTheme.colorScheme.primaryContainer
             ) {
-                Icon(
-                    imageVector = Icons.Filled.MenuBook, // Replace with your actual AURA logo if you have one
-                    contentDescription = "AURA Logo",
-                    modifier = Modifier.padding(24.dp),
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                Box(
+                    contentAlignment = Alignment.Center
+                ){
+                    Image(
+                        painter = painterResource(id = R.drawable.aura_logo),
+                        contentDescription = "AURA Logo",
+                    )
+                }
+
             }
 
             Spacer(modifier = Modifier.height(24.dp))

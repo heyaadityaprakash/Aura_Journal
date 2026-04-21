@@ -47,8 +47,10 @@ import coil.compose.AsyncImage
 import com.aadi.aurajournal.JournalViewModel
 import com.aadi.aurajournal.data.JournalEntry
 import com.aadi.aurajournal.data.MoodType
+import com.aadi.aurajournal.ui.components.LocationSelectionSheet
 import com.aadi.aurajournal.ui.components.MoodPicker
 import com.aadi.aurajournal.utils.copyUriToInternalStorage
+import com.aadi.aurajournal.utils.getStaticMapUrl
 import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
@@ -76,6 +78,8 @@ fun ComposeEntryScreen(
 
     var selectedImgs by remember { mutableStateOf(entryToEdit?.images ?: emptyList()) }
     var clickedImg by remember { mutableStateOf<String?>(null) }
+    var selectedLocation by remember { mutableStateOf(entryToEdit?.locationContext) }
+    var showLocationSheet by remember { mutableStateOf(false) }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 4)
@@ -140,6 +144,16 @@ fun ComposeEntryScreen(
         if (aiPromptText.isNotEmpty()) {
             isGenerating = false
         }
+    }
+
+    if (showLocationSheet) {
+        LocationSelectionSheet(
+            onDismissRequest = { showLocationSheet = false },
+            onLocationSelected = {
+                selectedLocation = it
+                showLocationSheet = false
+            }
+        )
     }
 
     Scaffold(
@@ -222,8 +236,7 @@ fun ComposeEntryScreen(
                                 leadingIcon = { Icon(Icons.Default.Place, contentDescription = null) },
                                 onClick = {
                                     menuExpanded = false
-                                    Toast.makeText(context, "Coming soon!", Toast.LENGTH_SHORT).show()
-
+                                    showLocationSheet = true
                                 }
                             )
                             DropdownMenuItem(
@@ -327,7 +340,9 @@ fun ComposeEntryScreen(
                         selectedImgs = selectedImgs,
                         onImagesChange = { selectedImgs = it },
                         clickedImg = clickedImg,
-                        onImageClick = { clickedImg = it }
+                        onImageClick = { clickedImg = it },
+                        selectedLocation = selectedLocation,
+                        onLocationChange = { selectedLocation = it }
                     )
                 }
             }
@@ -534,7 +549,9 @@ fun ManualInputView(
     selectedImgs: List<String>,
     onImagesChange: (List<String>) -> Unit,
     clickedImg: String?,
-    onImageClick: (String?) -> Unit
+    onImageClick: (String?) -> Unit,
+    selectedLocation: String?,
+    onLocationChange: (String?) -> Unit
 ) {
     var textState by remember { mutableStateOf(existingEntry?.content ?: "") }
     val dateString = remember { SimpleDateFormat("MMM dd", Locale.getDefault()).format(Date()) }
@@ -572,23 +589,79 @@ fun ManualInputView(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
+            if (selectedLocation != null) {
+                val parts = selectedLocation.split("|")
+                val locationName = parts.first()
+                val lat = parts.getOrNull(1)?.toDoubleOrNull()
+                val lon = parts.getOrNull(2)?.toDoubleOrNull()
+
+                Column(modifier = Modifier.padding(vertical = 12.dp)) {
+                    if (lat != null && lon != null) {
+                        AsyncImage(
+                            model = getStaticMapUrl(lat, lon),
+                            contentDescription = "Map of $locationName",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(180.dp)
+                                .clip(RoundedCornerShape(24.dp))
+                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(24.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.clickable { onLocationChange(null) }
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Place,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = locationName,
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "Remove location",
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            )
+                        }
+                    }
+                }
+            }
+
             // FIX 3: separation between date/time and mood
             Spacer(modifier = Modifier.height(12.dp))
             HorizontalDivider(
                 modifier = Modifier.padding(vertical = 4.dp),
                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
             )
-            Spacer(modifier = Modifier.height(12.dp))
-
-            MoodPicker(selectedMood = selectedMood, onMoodSelected = { newMood -> selectedMood = newMood })
-
-            Spacer(modifier = Modifier.height(24.dp))
 
             //add images
             ImageGrid(
                 images = selectedImgs,
                 onImgClick = { onImageClick(it) }
             )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            MoodPicker(selectedMood = selectedMood, onMoodSelected = { newMood -> selectedMood = newMood })
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             //where user will write
             TextField(
@@ -616,7 +689,8 @@ fun ManualInputView(
                     textState,
                     entryId = existingEntry?.id ?: 0,
                     mood = selectedMood?.name,
-                    images = selectedImgs
+                    images = selectedImgs,
+                    location = selectedLocation
                 )
                 onNavigateBack()
             },

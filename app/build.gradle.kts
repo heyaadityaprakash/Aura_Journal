@@ -59,6 +59,8 @@ android {
 }
 
 dependencies {
+    //location
+    implementation("com.google.android.gms:play-services-location:21.2.0")
     //for notifiaction
     implementation("androidx.work:work-runtime-ktx:2.9.0")
 
