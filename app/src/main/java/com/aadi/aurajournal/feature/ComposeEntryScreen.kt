@@ -26,6 +26,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.CameraAlt
+import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.*
@@ -34,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -73,7 +77,6 @@ fun ComposeEntryScreen(
     val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { inputTabs.size })
     val coroutineScope = rememberCoroutineScope()
 
-    var menuExpanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     var selectedImgs by remember { mutableStateOf(entryToEdit?.images ?: emptyList()) }
@@ -139,6 +142,10 @@ fun ComposeEntryScreen(
     )
 
 
+    // bottom sheet for letting user add some widgets / photos
+    var showSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState()
+
     // aiPromptText as the key so it re-runs whenever the prompt updates
     LaunchedEffect(aiPromptText) {
         if (aiPromptText.isNotEmpty()) {
@@ -182,71 +189,86 @@ fun ComposeEntryScreen(
                     }
                 },
                 actions = {
-                    Box {
-                        IconButton(onClick = { menuExpanded = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "More options")
-                        }
+                    IconButton(onClick = { showSheet = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                    }
 
-                        DropdownMenu(
-                            shape = RoundedCornerShape(24.dp),
-                            expanded = menuExpanded,
-                            onDismissRequest = { menuExpanded = false },
-                            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                    if (showSheet) {
+                        ModalBottomSheet(
+                            onDismissRequest = { showSheet = false },
+                            sheetState = sheetState,
+                            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                         ) {
-                            DropdownMenuItem(
-                                text = { Text("Open Camera") },
-                                leadingIcon = { Icon(Icons.Default.Camera, contentDescription = null) },
-                                onClick = {
-                                    menuExpanded = false
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 24.dp)
+                                    .padding(bottom = 48.dp)
+                            ) {
+                                Text(
+                                    text = "Add item",
+                                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Medium),
+                                    modifier = Modifier.padding(vertical = 16.dp)
+                                )
 
-                                    val permissionCheck = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
-                                    if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
-                                        //Create a temporary file in the app's cache directory
-                                        val tempFile = File.createTempFile(
-                                            "IMG_",
-                                            ".jpg",
-                                            context.externalCacheDir
+                                Surface(
+                                    shape = RoundedCornerShape(24.dp),
+                                    color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column {
+                                        SheetRow(
+                                            icon = Icons.Outlined.CameraAlt,
+                                            text = "Take photo ",
+                                            onClick = {
+                                                showSheet = false
+                                                val permissionCheck =
+                                                    ContextCompat.checkSelfPermission(
+                                                        context,
+                                                        Manifest.permission.CAMERA
+                                                    )
+                                                if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
+                                                    val tempFile = File.createTempFile(
+                                                        "IMG_",
+                                                        ".jpg",
+                                                        context.externalCacheDir
+                                                    )
+                                                    val uri = FileProvider.getUriForFile(
+                                                        context,
+                                                        "${context.packageName}.provider",
+                                                        tempFile
+                                                    )
+                                                    currentPhotoUri = uri
+                                                    cameraLauncher.launch(uri)
+                                                } else {
+                                                    cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                                }
+                                            }
                                         )
-
-                                        val uri = FileProvider.getUriForFile(
-                                            context,
-                                            "com.aadi.aurajournal.provider",
-                                            tempFile
+                                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                        SheetRow(
+                                            icon = Icons.Outlined.Image,
+                                            text = "Choose from Gallery",
+                                            onClick = {
+                                                showSheet = false
+                                                photoPickerLauncher.launch(
+                                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                                )
+                                            }
                                         )
-
-                                        currentPhotoUri = uri
-                                        cameraLauncher.launch(uri)
-                                    } else {
-                                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                        SheetRow(
+                                            icon = Icons.Outlined.LocationOn,
+                                            text = "Add location & map",
+                                            onClick = {
+                                                showSheet = false
+                                                showLocationSheet = true
+                                            }
+                                        )
                                     }
                                 }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Add Image") },
-                                leadingIcon = { Icon(Icons.Default.BrowseGallery, contentDescription = null) },
-                                onClick = {
-                                    menuExpanded = false
-                                    photoPickerLauncher.launch(
-                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                    )
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Add Location") },
-                                leadingIcon = { Icon(Icons.Default.Place, contentDescription = null) },
-                                onClick = {
-                                    menuExpanded = false
-                                    showLocationSheet = true
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Add Song") },
-                                leadingIcon = { Icon(Icons.Default.MusicNote, contentDescription = null) },
-                                onClick = {
-                                    menuExpanded = false
-                                    Toast.makeText(context, "Coming soon!", Toast.LENGTH_SHORT).show()
-                                }
-                            )
+                            }
                         }
                     }
                 },
@@ -347,6 +369,34 @@ fun ComposeEntryScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun SheetRow(
+    icon: ImageVector,
+    text: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(20.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(24.dp),
+            tint = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.width(20.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 
@@ -604,7 +654,11 @@ fun ManualInputView(
                                 .fillMaxWidth()
                                 .height(180.dp)
                                 .clip(RoundedCornerShape(24.dp))
-                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(24.dp)),
+                                .border(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.outlineVariant,
+                                    RoundedCornerShape(24.dp)
+                                ),
                             contentScale = ContentScale.Crop
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -843,34 +897,6 @@ fun ImageGrid(images: List<String>, onImgClick: (String) -> Unit) {
                 }
             }
         }
-
-//        images.chunked(2).forEach { rowImages ->
-//            Row(
-//                modifier = Modifier.fillMaxWidth(),
-//                horizontalArrangement = Arrangement.spacedBy(8.dp)
-//            ) {
-//                rowImages.forEach { imgPath ->
-//                    AsyncImage(
-//                        model = imgPath,
-//                        contentDescription = "journal Img",
-//                        contentScale = ContentScale.Crop,
-//                        modifier = Modifier
-//                            .weight(1f)
-//                            .aspectRatio(1f)
-//                            .clip(RoundedCornerShape(16.dp))
-//                            .border(
-//                                1.dp,
-//                                MaterialTheme.colorScheme.outlineVariant,
-//                                RoundedCornerShape(16.dp)
-//                            )
-//                            .clickable { onImgClick(imgPath) }
-//                    )
-//                }
-//                if (rowImages.size == 1) {
-//                    Spacer(modifier = Modifier.weight(1f))
-//                }
-//            }
-//        }
     }
 }
 
