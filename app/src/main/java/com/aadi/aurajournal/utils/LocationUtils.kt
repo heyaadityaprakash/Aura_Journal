@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Geocoder
 import android.os.Looper
+import com.aadi.aurajournal.BuildConfig
 import com.google.android.gms.location.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -17,7 +18,8 @@ import java.util.Locale
 data class LocationDetails(val name: String, val lat: Double, val lng: Double)
 
 
-const val GEOAPIFY_API_KEY = "8ddbcc98d7ea4b3ebbcb74515dda4be0"
+const val GEOAPIFY_API_KEY = BuildConfig.GEOAPIFY_API_KEY
+
 
 @SuppressLint("MissingPermission")
 // core func to get user's gps location
